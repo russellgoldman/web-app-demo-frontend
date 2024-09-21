@@ -1,0 +1,20 @@
+FROM node:20.17.0-alpine3.19
+
+# Set the working directory
+WORKDIR /app
+
+# Copy all required files for the development environment
+COPY ./package.json .
+COPY ./package-lock.json .
+COPY ./tsconfig.json .
+COPY ./public/ ./public/
+COPY ./src/ ./src/
+
+# Install dependencies
+RUN npm install
+
+# Expose the development server on port 3000
+EXPOSE 3000
+
+# Run the development server on localhost
+CMD ["npm", "run", "start"]
