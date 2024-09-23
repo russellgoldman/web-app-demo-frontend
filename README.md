@@ -15,5 +15,5 @@ To view the logs of the running development environment, please run `make dev-lo
 ### Stopping the Environment
 To stop the running development environment, please run `make dev-down`.
 
-## Restart the Environment
+### Restart the Environment
 To rebuild and subsequently start the development environment (if any changes have been made to the project), please run `make dev-restart`.
