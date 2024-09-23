@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert, AlertTitle } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Alert, AlertTitle, CircularProgress } from '@mui/material';
 import styled from '@emotion/styled'
 import { Record, RecordSearchParam } from '../common';
 
 interface RecordTableProps {
 	startEpoch: number,
 	endEpoch: number,
-	recordSearchParam?: RecordSearchParam,
-	recordSearchValue?: string
+	recordSearchParam: RecordSearchParam,
+	recordSearchValue: string,
 }
 
 const RecordTable: React.FC<RecordTableProps> = (props) => {
@@ -19,7 +19,8 @@ const RecordTable: React.FC<RecordTableProps> = (props) => {
 	} = props
 
     const [records, setRecords] = useState<Record[] | null>(null)
-	const [error, setError] = useState<string | null>(null);
+	const [error, setError] = useState<string | null>(null)
+	const [loading, setLoading] = useState<boolean>(true)
 
 	useEffect(() => {
 		(async () => {
@@ -43,7 +44,12 @@ const RecordTable: React.FC<RecordTableProps> = (props) => {
 			setError('Backend server url is not defined in env')
 			return null
 		}
-		return await fetch(`${server_url}/mssql/records/${startEpoch}/${endEpoch}`)
+		let url = `${server_url}/mssql/records/${startEpoch}/${endEpoch}`
+		if (recordSearchParam !== RecordSearchParam.none) {
+			url += `/${recordSearchParam}/${recordSearchValue}`
+		}
+		setLoading(true)
+		return await fetch(url)
 			.then(async (res: Response): Promise<Record[]> => {
 				if (!res.ok) {
 					throw new Error(`HTTP error status: ${res.status}`)
@@ -62,17 +68,33 @@ const RecordTable: React.FC<RecordTableProps> = (props) => {
 				console.error(err)
 				return null
 			})
+			.finally(() => {
+				setLoading(false)
+			})
+	}
+
+	if (loading) {
+		return (
+			<CenteredLoadingIndicator>
+				<CircularProgress />
+			</CenteredLoadingIndicator>
+		)
 	}
 	
 	return (
 		<>
 			{error && (
 				<Alert severity="error">
-				<AlertTitle>Error</AlertTitle>
-				{error}
+					<AlertTitle>Error</AlertTitle>
+					{error}
 				</Alert>
 			)}
-			{records && (
+			{records !== null && records.length === 0 && !error ? (
+				<Alert severity="warning">
+					<AlertTitle>Warning</AlertTitle>
+					No records found for your search query.
+				</Alert>
+			) : records && (
 				<TableContainer component={Paper}>
 					<Table>
 						<TableHead>
@@ -106,6 +128,12 @@ const RecordTable: React.FC<RecordTableProps> = (props) => {
 
 const BoldTableCell = styled(TableCell)`
   font-weight: bold;
+`
+
+const CenteredLoadingIndicator = styled('div')`
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
 `
 
 export default RecordTable

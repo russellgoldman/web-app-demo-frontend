@@ -10,10 +10,11 @@ export interface Record {
 }
 
 export enum RecordSearchParam {
-	phone = "phone",
-	voicemail = "voicemail",
-	userId = "userId",
-	clusterId = "clusterId",
+    none = 'none',
+	phone = 'phone',
+	voicemail = 'voicemail',
+	userId = 'userId',
+	clusterId = 'clusterId',
 }
 
 export class Epoch {

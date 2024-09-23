@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Alert, AlertTitle, Box, Button, Paper, Typography } from '@mui/material';
+import { Alert, AlertTitle, Box, Button, FormControl, InputLabel, MenuItem, Paper, Select, SelectChangeEvent, TextField, Typography } from '@mui/material';
 import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Epoch, RecordSearchParam } from '../common';
@@ -9,23 +9,25 @@ import { Dayjs } from 'dayjs';
 interface RecordFormData {
   startEpoch: number | null,
   endEpoch: number | null,
-  recordSearchParam?: RecordSearchParam | null,
-  recordSearchValue?: string | null,
+  recordSearchParam: RecordSearchParam,
+  recordSearchValue: string,
 }
 interface RecordFormError {
   startEpoch: string | null,
-  endEpoch: string | null
+  endEpoch: string | null,
+  recordSearchValue: string | null,
 }
 const RecordForm = () => {
   const [formData, setFormData] = useState<RecordFormData>({
     startEpoch: null,
     endEpoch: null,
-    recordSearchParam: null,
-    recordSearchValue: null,
+    recordSearchParam: RecordSearchParam.none,
+    recordSearchValue: '',
   })
   const [formError, setFormError] = useState<RecordFormError>({
     startEpoch: null,
     endEpoch: null,
+    recordSearchValue: null,
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -44,12 +46,24 @@ const RecordForm = () => {
     setIsSubmitted(false)
   }
 
+  const handleDropdownChange = (event: SelectChangeEvent<RecordSearchParam>) => {
+    setFormData({ ...formData, recordSearchParam: event.target.value as RecordSearchParam })
+    setIsSubmitted(false)
+  }
+
+  const handleTextFieldChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, recordSearchValue: event.target.value })
+    setFormError({ ...formError, recordSearchValue: null })
+    setIsSubmitted(false)
+  }
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     let formHasErrors = false
     const newFormError: RecordFormError = {
       startEpoch: null,
       endEpoch: null,
+      recordSearchValue: null,
     }
 
     if (formData.startEpoch == null) {
@@ -63,6 +77,11 @@ const RecordForm = () => {
     if (formData.startEpoch && formData.endEpoch && formData.startEpoch >= formData.endEpoch) {
       newFormError.startEpoch = 'Start DateTime must take place before the End DateTime.'
       newFormError.endEpoch = 'End DateTime must take place after the Start DateTime.'
+      formHasErrors = true
+    }
+
+    if (formData.recordSearchParam !== RecordSearchParam.none && formData.recordSearchValue === '') {
+      newFormError.recordSearchValue = 'Search Value must have a value if Search Parameter is not None'
       formHasErrors = true
     }
 
@@ -91,7 +110,7 @@ const RecordForm = () => {
             onSubmit={handleSubmit}
           >
             <DateTimePicker
-              label="Start DateTime"
+              label="Start DateTime *"
               value={Epoch.epochToDate(formData.startEpoch)}
               onChange={handleStartDateChange}
               slotProps={{
@@ -103,7 +122,7 @@ const RecordForm = () => {
               }}
             />
             <DateTimePicker
-              label="End DateTime"
+              label="End DateTime *"
               value={Epoch.epochToDate(formData.endEpoch)}
               onChange={handleEndDateChange}
               slotProps={{
@@ -114,6 +133,31 @@ const RecordForm = () => {
                 }
               }}
             />
+            <FormControl fullWidth>
+              <InputLabel id="record-search-param-label">Search Parameter</InputLabel>
+              <Select
+                labelId="record-search-param-label"
+                value={formData.recordSearchParam}
+                onChange={handleDropdownChange}
+                label="Search Parameter"
+              >
+                <MenuItem value={`${RecordSearchParam.none}`}>None</MenuItem>
+                <MenuItem value={`${RecordSearchParam.clusterId}`}>Cluster ID</MenuItem>
+                <MenuItem value={`${RecordSearchParam.userId}`}>User ID</MenuItem>
+                <MenuItem value={`${RecordSearchParam.phone}`}>Phone</MenuItem>
+                <MenuItem value={`${RecordSearchParam.voicemail}`}>Voicemail</MenuItem>
+              </Select>
+            </FormControl>
+            {formData.recordSearchParam !== RecordSearchParam.none && (
+              <TextField
+                label="Search Value"
+                value={formData.recordSearchValue}
+                onChange={handleTextFieldChange}
+                fullWidth
+                error={formError.recordSearchValue !== '' && formError.recordSearchValue !== null}
+                helperText={formError.recordSearchValue}
+              />
+            )}
             <Button type="submit" variant="contained" color="primary">
                 Submit
             </Button>
@@ -126,12 +170,14 @@ const RecordForm = () => {
           </Box>
         </LocalizationProvider>
       </Paper>
-      {isSubmitted && formData.startEpoch && formData.endEpoch &&
+      {isSubmitted && formData.startEpoch && formData.endEpoch && (
         <RecordTable
           startEpoch={formData.startEpoch}
           endEpoch={formData.endEpoch}
+          recordSearchParam={formData.recordSearchParam}
+          recordSearchValue={formData.recordSearchValue}
         />
-      }
+      )}
     </>
   )
 }
